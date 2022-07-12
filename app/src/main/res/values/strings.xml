@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">BarkNote</string>
+    <string name="nameHeader">Name:</string>
+    <string name="none">none</string>
+    <string name="status">Status:</string>
+    <string name="last_cared_for">Last Cared For:</string>
+</resources>
