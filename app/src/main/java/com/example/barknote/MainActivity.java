@@ -1,11 +1,27 @@
 package com.example.barknote;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+
+import android.content.Context;
+import android.content.DialogInterface;
 import android.telephony.SmsManager;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Button;
-//import java.time.LocalDate;
+import android.view.View;
+
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.FileReader;
+import java.io.File;
+
+
+
+
+import com.google.gson.Gson;
+
 
 public class MainActivity extends AppCompatActivity {
 
@@ -14,22 +30,53 @@ public class MainActivity extends AppCompatActivity {
         smsManager.sendTextMessage(contact, null, "sms message", null, null);
     }
 
-    protected Pet loadPet(){
-        // to be replaced with loading data from file
-        Pet testPet = new Pet("Quilo", "2062440287", false);
-        return testPet;
+    protected void savePet(Pet thePet, Context c){
+        Gson gson = new Gson();
+        String petString = gson.toJson(thePet);
+
+        // I won't lie, this saving from file is like all stack overflow but i don't care lol
+        // https://stackoverflow.com/questions/14376807/read-write-string-from-to-a-file-in-android
+
+        try{
+            OutputStreamWriter osw = new OutputStreamWriter(c.openFileOutput(
+                    "current_pet.json", Context.MODE_PRIVATE));
+            osw.write(petString);
+            osw.close();
+            System.out.println("File written at " + c.getFileStreamPath("current_pet.json"));
+        }
+        catch(IOException e){
+            Log.e("Exception", "JSON File write failed: " + e.toString());
+        }
+
     }
 
-    protected void displayName(){
-        Pet thePet = loadPet();
+    protected Pet loadPet(Context c){
+        // to be replaced with loading data from file
+        Gson gson = new Gson();
+        Pet thePet = new Pet("default", "888", true);
+
+        try{
+            File petJsonFile = c.getFileStreamPath("current_pet.json");
+            FileReader fr = new FileReader(petJsonFile);
+            thePet = gson.fromJson(fr, Pet.class);
+        }
+        catch(IOException e){
+            Log.e("Exception", "JSON File load failed: " + e.toString());
+        }
+
+        return thePet;
+    }
+
+    protected void displayName(Context c) {
+        Pet thePet = loadPet(c);
 
         String theName = thePet.getName();
         TextView tv1 = (TextView) findViewById(R.id.name);
         tv1.setText(theName);
     }
 
-    protected void displayStatus(){
-        Pet thePet = loadPet();
+    protected void displayStatus(Context c) {
+        Pet thePet = loadPet(c);
 
         String theStatus;
 
@@ -44,8 +91,8 @@ public class MainActivity extends AppCompatActivity {
         tv1.setText(theStatus);
     }
 
-    protected void displayButton(){
-        Pet thePet = loadPet();
+    protected void displayButton(Context c) {
+        Pet thePet = loadPet(c);
 
         String buttonText;
         boolean shouldBeOff = false;
@@ -70,32 +117,67 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    protected void displayAll(){
-        displayName();
-        displayStatus();
-        displayButton();
-        //displayCareDate();
+    protected void displayAll(Context c) {
+        displayName(c);
+        displayStatus(c);
+        displayButton(c);
     }
-
-    //displays LastCaredFor date, but for user this isn't really necessary
-    /***
-    protected void displayCareDate(){
-        Pet thePet = loadPet();
-
-        String theCareDate = thePet.whenLastCared().toString(); // just need the string
-        TextView tv1 = (TextView) findViewById(R.id.careDate);
-        tv1.setText(theCareDate);
-
-    }
-    ***/
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-
+    protected void onCreate(Bundle savedInstanceState){
+        //launching the main activity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        displayAll();
+
+        // loading data from file and displaying on-screen
+        displayAll(this);
+
+        //adding button functionality
+        Button careButton = (Button) findViewById(R.id.careAction);
+        careButton.setOnClickListener(new View.OnClickListener() {
+
+            // this is an alert that tells the user to make sure pet has been fed and used the
+            // bathroom
+            @Override
+            public void onClick(View view) {
+
+                //getting the proper pet name to display in the alert
+
+                Pet thePet = loadPet(view.getContext());
+
+                String careAlertMessage = "Has " + thePet.getName() + " been taken outside to use" +
+                        " the bathroom and been fed?";
+
+                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+
+                builder.setMessage(careAlertMessage);
+
+                // functionality for confirming
+                builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+
+                    }
+                });
+
+                builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+
+                    }
+                });
+
+                AlertDialog dialog = builder.create();
+                dialog.show();
+                //System.out.println(":sourPls:");
+            }
+        });
 
     }
+
+
+
+
+
 
 }

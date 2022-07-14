@@ -45,7 +45,7 @@ public class Pet {
         return caredForToday;
     }
 
-    public LocalDate whenLastCared(){
+    public LocalDate getLastCared(){
         return lastCared;
     }
 
