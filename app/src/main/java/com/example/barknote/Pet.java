@@ -18,17 +18,17 @@ public class Pet {
     private String name;
     private String contact;
     private boolean caredForToday;
-    private LocalDate lastCared;
+    private String lastCared;
 
     //private String photoFP;
 
     /* Constructor */
 
-    public Pet(String name, String contact, boolean caredForToday){
+    public Pet(String name, String contact, boolean caredForToday, String lastCared){
         this.name = name;
         this.contact = contact;
         this.caredForToday = caredForToday;
-        this.lastCared = LocalDate.now();
+        this.lastCared = lastCared;
     }
 
     /* Accessor Methods */
@@ -45,20 +45,24 @@ public class Pet {
         return caredForToday;
     }
 
-    public LocalDate getLastCared(){
+    public String getLastCared(){
         return lastCared;
     }
 
     /* Override toString */
 
     public String toString(){
-        String x = "Name: " + name + "Contact: " + contact + "\nCared for today? : " + caredForToday
+        String x = "\nName: " + name + "\nContact: " + contact + "\nCared for today?: " + caredForToday
                 + "\nLast Cared: " + lastCared + "\n";
         return x;
     }
 
     /* Mutator Methods */
 
+    public void setLastCared(String newLastCared){
+        lastCared = newLastCared;
+
+    }
     public void rename(String newName){ //rename your pet
         name = newName;
 
@@ -69,8 +73,9 @@ public class Pet {
     }
 
     public void checkCare(){ // check if you took care of your pet today
-        LocalDate today = LocalDate.now();
-        if(today.equals(lastCared)){
+
+        String today = LocalDate.now().toString();
+        if(today == lastCared){
             caredForToday = true;
         }
         else{
@@ -81,7 +86,7 @@ public class Pet {
 
     public void updateCare(){ // update pet object after pet was taken care of today
         caredForToday = true;
-        lastCared = LocalDate.now();
+        lastCared = LocalDate.now().toString();
     }
 
 }

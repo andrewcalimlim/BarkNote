@@ -18,12 +18,16 @@ import android.widget.Button;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.time.LocalDate;
+
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.FileReader;
 import java.io.File;
 
+
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
 /***
  * NOTE TO SELF: /data/user/0/com.example.barknote/files/current_pet.json
@@ -39,7 +43,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     protected void savePet(Pet thePet, Context c){
-        Gson gson = new Gson();
+        //Log.i("BOUT TO SAVE THIS PET TO FILE YO: ", thePet.toString());
+        GsonBuilder gsonBuilder = new GsonBuilder();
+        gsonBuilder.serializeNulls();
+        Gson gson = gsonBuilder.create();
+
         String petString = gson.toJson(thePet);
 
         // I won't lie, this saving from file is like all stack overflow but i don't care lol
@@ -50,7 +58,7 @@ public class MainActivity extends AppCompatActivity {
                     "current_pet.json", Context.MODE_PRIVATE));
             osw.write(petString);
             osw.close();
-            System.out.println("File written at " + c.getFileStreamPath("current_pet.json"));
+            //System.out.println("File written at " + c.getFileStreamPath("current_pet.json"));
         }
         catch(IOException e){
             Log.e("Exception", "JSON File write failed: " + e.toString());
@@ -61,15 +69,17 @@ public class MainActivity extends AppCompatActivity {
     // ok but THIS load function is all me, baby, all me
     // sourPls
     protected Pet loadPet(Context c){
-        // to be replaced with loading data from file
         Gson gson = new Gson();
-        Pet thePet = new Pet("default", "888", true);
+        Pet thePet = new Pet(null, null, false, null);
+        //Log.i("HEADS-UP: ", thePet.toString());
 
         try{
             File petJsonFile = c.getFileStreamPath("current_pet.json");
             Log.i("JSON FILE LOADED", "from" + petJsonFile.getAbsolutePath());
             FileReader fr = new FileReader(petJsonFile);
             thePet = gson.fromJson(fr, Pet.class);
+            //thePet.checkCare();
+            //savePet(thePet, c);
         }
         catch(IOException e){
             Log.e("Exception", "JSON File load failed: " + e.toString());
@@ -78,17 +88,13 @@ public class MainActivity extends AppCompatActivity {
         return thePet;
     }
 
-    protected void displayName(Context c) {
-        Pet thePet = loadPet(c);
-
+    protected void displayName(Pet thePet, Context c) {
         String theName = thePet.getName();
         TextView tv1 = (TextView) findViewById(R.id.name);
         tv1.setText(theName);
     }
 
-    protected void displayStatus(Context c) {
-        Pet thePet = loadPet(c);
-
+    protected void displayStatus(Pet thePet, Context c) {
         String theStatus;
 
         if(thePet.getCaredForToday()){
@@ -102,9 +108,7 @@ public class MainActivity extends AppCompatActivity {
         tv1.setText(theStatus);
     }
 
-    protected void displayButton(Context c) {
-        Pet thePet = loadPet(c);
-
+    protected void displayButton(Pet thePet, Context c) {
         String buttonText;
         boolean shouldBeOff = false;
 
@@ -128,10 +132,10 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    protected void displayMain(Context c) {
-        displayName(c);
-        displayStatus(c);
-        displayButton(c);
+    protected void displayMain(Pet thePet, Context c) {
+        displayName(thePet, c);
+        displayStatus(thePet, c);
+        displayButton(thePet, c);
     }
 
     /***
@@ -153,11 +157,9 @@ public class MainActivity extends AppCompatActivity {
 
     protected void displaySetup(Context c){
 
-
         AlertDialog.Builder builder = new AlertDialog.Builder(c);
         builder.setTitle("Welcome to BarkNote!");
         builder.setMessage("Please fill out the following details.");
-
 
         // INPUTS
 
@@ -200,16 +202,23 @@ public class MainActivity extends AppCompatActivity {
                 String petName = petNameInput.getText().toString();
                 String contact = contactInput.getText().toString();
                 boolean cared = caredQuery.isChecked();
+                String caredDate = null;
 
-                Pet thePet = new Pet(petName, contact, cared);
+                if(cared){
+                    caredDate = LocalDate.now().toString();
+                }
+
+
+                Pet thePet = new Pet(petName, contact, cared, caredDate);
                 savePet(thePet, c);
-                displayMain(c);
+                Log.i("SAVE SUCCESS", "cared: " + cared);
+                Log.i("PET OBJ: ", thePet.toString());
+                displayMain(thePet, c);
 
             }
         });
 
         AlertDialog dialog = builder.create();
-
 
         /***
          * These listeners are here to ensure proper submission forms happen (basically
@@ -276,7 +285,6 @@ public class MainActivity extends AppCompatActivity {
 
         });
 
-
         dialog.show();
 
     }
@@ -292,14 +300,20 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
+
         //launching the main activity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         setupCheck(this);
 
+        Pet thePet = loadPet(this);
+        thePet.checkCare();
+        savePet(thePet, this);
+
+
         // loading data from file and displaying on-screen
-        displayMain(this);
+        displayMain(thePet, this);
 
         //adding button functionality
         Button careButton = (Button) findViewById(R.id.careAction);
@@ -312,7 +326,7 @@ public class MainActivity extends AppCompatActivity {
 
                 //getting the proper pet name to display in the alert
 
-                Pet thePet = loadPet(view.getContext());
+                //Pet thePet = loadPet(view.getContext());
 
                 String careAlertMessage = "Has " + thePet.getName() + " been taken outside to use" +
                         " the bathroom and been fed?";
