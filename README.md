@@ -5,4 +5,6 @@ TODO
 
 -SETTINGS popup
 
--Update care (YES functionality, texting people)
+-refactor structure of menus so that sms permission appears on startup
+-onresume should reload main
+-make a pretty icon and SHIP
