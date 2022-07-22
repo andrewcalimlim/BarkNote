@@ -2,11 +2,8 @@ package com.example.barknote;
 
 import static android.Manifest.permission.SEND_SMS;
 
-import android.Manifest;
-import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.telephony.SmsManager;
 import android.text.Editable;
@@ -34,7 +31,6 @@ import java.io.OutputStreamWriter;
 import java.io.FileReader;
 import java.io.File;
 import java.time.format.DateTimeFormatter;
-
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -101,13 +97,15 @@ public class MainActivity extends AppCompatActivity {
      * DISPLAY FEATURES ON MAIN ACTIVITY
      */
 
-    protected void displayName(Pet thePet, Context c) {
+    protected void displayName(Context c) {
+        Pet thePet = loadPet(c);
         String theName = thePet.getName();
         TextView tv1 = (TextView) findViewById(R.id.name);
         tv1.setText(theName);
     }
 
-    protected void displayStatus(Pet thePet, Context c) {
+    protected void displayStatus(Context c) {
+        Pet thePet = loadPet(c);
         String theStatus;
 
         if(thePet.getCaredForToday()){
@@ -121,7 +119,8 @@ public class MainActivity extends AppCompatActivity {
         tv1.setText(theStatus);
     }
 
-    protected void displayButton(Pet thePet, Context c) {
+    protected void displayButton(Context c) {
+        Pet thePet = loadPet(c);
         String buttonText;
         boolean shouldBeOff = false;
 
@@ -145,10 +144,10 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    protected void displayMain(Pet thePet, Context c) {
-        displayName(thePet, c);
-        displayStatus(thePet, c);
-        displayButton(thePet, c);
+    protected void displayMain(Context c) {
+        displayName(c);
+        displayStatus(c);
+        displayButton(c);
     }
 
     /***
@@ -172,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
 
     // only used in main activity but this makes main activity not a god function
 
-    protected void displaySetup(Context c){
+    protected void displaySetup(ActivityResultLauncher<String> rpl, Context c){
 
         AlertDialog.Builder builder = new AlertDialog.Builder(c);
         builder.setTitle("Welcome to BarkNote!");
@@ -230,8 +229,8 @@ public class MainActivity extends AppCompatActivity {
                 savePet(thePet, c);
                 Log.i("SAVE SUCCESS", "cared: " + cared);
                 Log.i("PET OBJ: ", thePet.toString());
-                //displayRequestWarning(thePet, c);
-                displayMain(thePet, c);
+                displayMain(c);
+                displayRequest(rpl, c);
 
             }
         });
@@ -253,9 +252,7 @@ public class MainActivity extends AppCompatActivity {
 
         contactInput.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-            }
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -268,20 +265,15 @@ public class MainActivity extends AppCompatActivity {
                 else{
                     dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
                 }
-
             }
             @Override
-            public void afterTextChanged(Editable editable) {
-
-            }
+            public void afterTextChanged(Editable editable) {}
 
         });
 
         petNameInput.addTextChangedListener(new TextWatcher() {
             @Override
-            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-
-            }
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
 
             @Override
             public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
@@ -297,9 +289,7 @@ public class MainActivity extends AppCompatActivity {
 
             }
             @Override
-            public void afterTextChanged(Editable editable) {
-
-            }
+            public void afterTextChanged(Editable editable) {}
 
         });
 
@@ -311,27 +301,36 @@ public class MainActivity extends AppCompatActivity {
      * PET UPDATE FUNCTIONALITY
      */
 
-    protected void displayUpdateCancelled(Pet thePet, Context c){
+    protected void displayUpdateCancelled(Context c){
+        Pet thePet = loadPet(c);
+        String cancelMessage = "";
 
-        String cancelMessage = "No text message was sent. Please take care of " +
-                thePet.getName() + " before trying to update again.";
+        if(smsAllowed(c)){
+            cancelMessage += "No text message was sent. ";
+        }
+
+        cancelMessage += " Please take care of " + thePet.getName() +
+                " before trying to update again.";
+
         AlertDialog.Builder builder = new AlertDialog.Builder(c);
         builder.setTitle("Pet Update Cancelled");
         builder.setMessage(cancelMessage);
-        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-
-            }
-        });
+        builder.setPositiveButton("OK", null);
         AlertDialog dialog = builder.create();
         dialog.show();
 
     }
 
-    protected void displayUpdateSuccess(Pet thePet, Context c){
-        String successMessage = "BarkNote text message sent to " + thePet.getContact() +
-                ". " + thePet.getName() + " thanks you!";
+    protected void displayUpdateSuccess(Context c){
+        Pet thePet = loadPet(c);
+        String successMessage = "";
+
+        if(smsAllowed(c)){
+            successMessage += "BarkNote text message sent to " + thePet.getContact() + ". ";
+        }
+
+        successMessage += thePet.getName() + " thanks you!";
+
         AlertDialog.Builder builder = new AlertDialog.Builder(c);
         builder.setTitle("Pet Update Succeeded!");
         builder.setMessage(successMessage);
@@ -350,41 +349,37 @@ public class MainActivity extends AppCompatActivity {
         smsManager.sendTextMessage(contact, null, textMessage, null, null);
     }
 
-    protected boolean requestNeeded(Context c){
+    protected boolean smsAllowed(Context c){
         int verdict = ContextCompat.checkSelfPermission(c,
                 SEND_SMS);
         if(verdict == -1){
-            return true;
+            return false;
         }
-        return false;
+        return true;
     }
 
-    protected void setupCheck(Context c){
+    protected void setupCheck(ActivityResultLauncher<String> rpl, Context c){
         if(setupNeeded(c)){
-            displaySetup(c);
+            displaySetup(rpl, c);
         }
     }
 
-    protected void displayRequestWarning(Context c){
+    protected void displayRequest(ActivityResultLauncher<String> rpl, Context c){
         AlertDialog.Builder builder = new AlertDialog.Builder(c);
         builder.setMessage("Please accept the following" +
                 " SMS permission sending request so that BarkNote can automatically send texts" +
-                " to your requested contact.\nBarkNote will only text the contact number you" +
-                " set earlier whenever you update the pet's care in the app (once a day at most).");
+                " to your requested contact upon update.");
+        builder.setTitle("SMS Text Permission Request Incoming");
         builder.setCancelable(false);
 
         builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
 
+                rpl.launch(SEND_SMS);
             }
         });
-        builder.setNegativeButton("No Thanks", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                displayRequestDeniedResponse(c);
-            }
-        });
+
         AlertDialog dialog = builder.create();
         dialog.show();
 
@@ -392,14 +387,50 @@ public class MainActivity extends AppCompatActivity {
 
     protected void displayRequestDeniedResponse(Context c){
         AlertDialog.Builder builder = new AlertDialog.Builder(c);
-        builder.setMessage("BarkNote will not SMS text your contact on update then.");
+        builder.setTitle("SMS Text Permission Request Denied");
+        builder.setMessage("BarkNote will not SMS text your contact on update, however please"
+                +" note that BarkNote now functions as a simple reminder app.\nIf you change" +
+                " your mind, please enable SMS permissions for BarkNote in your phone's settings.");
         builder.setCancelable(false);
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                displaySetupCompletion(c);
+            }
+        });
+
         AlertDialog dialog = builder.create();
-        builder.setPositiveButton("OK", null);
         dialog.show();
 
     }
 
+    protected void displayRequestAcceptedResponse(Context c){
+        AlertDialog.Builder builder = new AlertDialog.Builder(c);
+        builder.setTitle("SMS Text Permission Request Accepted");
+        builder.setMessage("Thank you for enabling SMS permissions! BarkNote is now fully " +
+                "functional.\nBarkNote will never ask for any other permissions.");
+        builder.setCancelable(false);
+        builder.setPositiveButton("OK", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                displaySetupCompletion(c);
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+    }
+
+    protected void displaySetupCompletion(Context c){
+        AlertDialog.Builder builder = new AlertDialog.Builder(c);
+        builder.setTitle("Setup Complete!");
+        builder.setMessage("BarkNote is now ready to be used. Thanks for downloading!");
+        builder.setCancelable(false);
+        builder.setPositiveButton("OK", null);
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
 
     /* MAIN ACTIVITY */
 
@@ -410,36 +441,38 @@ public class MainActivity extends AppCompatActivity {
         // system permissions dialog. Save the return value, an instance of
         // ActivityResultLauncher, as an instance variable.
         ActivityResultLauncher<String> requestPermissionLauncher =
-                registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
-                    if (isGranted) {
-                        // Permission is granted. Continue the action or workflow in your
-                        // app.
+                registerForActivityResult(new ActivityResultContracts.RequestPermission(),
+                        isGranted -> {
+                            if (isGranted) {
+                                // Permission is granted. Continue the action or workflow in your
+                                // app.
 
-                    } else {
-                        // Explain to the user that the feature is unavailable because the
-                        // features requires a permission that the user has denied. At the
-                        // same time, respect the user's decision. Don't link to system
-                        // settings in an effort to convince the user to change their
-                        // decision.
+                                displayRequestAcceptedResponse(MainActivity.this);
 
-                        displayRequestDeniedResponse(MainActivity.this);
+                            } else {
+                                // Explain to the user that the feature is unavailable because the
+                                // features requires a permission that the user has denied. At the
+                                // same time, respect the user's decision. Don't link to system
+                                // settings in an effort to convince the user to change their
+                                // decision.
 
-                    }
-                });
+                                displayRequestDeniedResponse(MainActivity.this);
+
+                            }
+                        });
 
         //launching the main activity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        setupCheck(this);
+        setupCheck(requestPermissionLauncher, this);
 
         Pet thePet = loadPet(this);
         thePet.checkCare();
         savePet(thePet, this);
 
-
         // loading data from file and displaying on-screen
-        displayMain(thePet, this);
+        displayMain(this);
 
         //adding button functionality
         Button careButton = (Button) findViewById(R.id.careAction);
@@ -470,40 +503,25 @@ public class MainActivity extends AppCompatActivity {
                         thePet.updateCare();
                         savePet(thePet, MainActivity.this);
 
-                        // getting the current time
-                        LocalTime rn = LocalTime.now();
-                        String pattern = "h:mm a";
-                        String theTime = rn.format(DateTimeFormatter.ofPattern(pattern));
+                        // sending SMS texts if allowed
+                        if(smsAllowed(MainActivity.this)){
+                            // getting the current time
+                            LocalTime rn = LocalTime.now();
+                            String pattern = "h:mm a";
+                            String theTime = rn.format(DateTimeFormatter.ofPattern(pattern));
 
-                        //creating a text
-                        String theTextMessage = "Hello! This is an automated BarkNote text " +
-                        "confirming that " + thePet.getName() + " has been taken care of " +
-                        "(walked, used the bathroom, and fed) at " + theTime;
+                            //creating a text
+                            String theTextMessage = "Hello! This is an automated BarkNote text " +
+                                    "confirming that " + thePet.getName() + " has been taken care" +
+                                    " of (walked, used the bathroom, and fed) at " + theTime;
 
-
-                        if (ContextCompat.checkSelfPermission(MainActivity.this, SEND_SMS) ==
-                                PackageManager.PERMISSION_GRANTED) {
-                            // You can use the API that requires the permission.
-
-                            // All is well! (insert dance number from 3 Idiots here)
-                            // sending the text uhhh shit
+                            // sending the text
                             textContact(thePet.getContact(), theTextMessage);
 
-                        } else if (shouldShowRequestPermissionRationale(SEND_SMS)) {
-                            // In an educational UI, explain to the user why your app requires this
-                            // permission for a specific feature to behave as expected. In this UI,
-                            // include a "cancel" or "no thanks" button that allows the user to
-                            // continue using your app without granting the permission.
-                            displayRequestWarning(MainActivity.this);
-                        } else {
-                            // You can directly ask for the permission.
-                            // The registered ActivityResultCallback gets the result of this request.
-                            requestPermissionLauncher.launch(SEND_SMS);
                         }
 
-
-                        displayUpdateSuccess(thePet, MainActivity.this);
-                        displayMain(thePet, MainActivity.this);
+                        displayUpdateSuccess(MainActivity.this);
+                        displayMain(MainActivity.this);
 
                     }
                 });
@@ -511,7 +529,7 @@ public class MainActivity extends AppCompatActivity {
                 builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        displayUpdateCancelled(thePet, MainActivity.this);
+                        displayUpdateCancelled(MainActivity.this);
 
                     }
                 });
@@ -522,10 +540,5 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
-
-
-
-
-
 
 }
