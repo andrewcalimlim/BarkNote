@@ -5,6 +5,6 @@ TODO
 
 -SETTINGS popup
 
--refactor structure of menus so that sms permission appears on startup
--onresume should reload main
+-onresume should reload main/do setup checks
+
 -make a pretty icon and SHIP
