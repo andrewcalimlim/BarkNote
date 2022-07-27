@@ -119,7 +119,7 @@ public class MainActivity extends AppCompatActivity {
         tv1.setText(theStatus);
     }
 
-    protected void displayButton(Context c) {
+    protected void displayPetUpdateButton(Context c) {
         Pet thePet = loadPet(c);
         String buttonText;
         boolean shouldBeOff = false;
@@ -157,12 +157,15 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    protected void displayMain(Context c) {
-        displayName(c);
-        displayStatus(c);
-        displayWarning(c);
-        displayButton(c);
+    protected void displayEditPetButton(Context c){
+        Button b1 = (Button) findViewById(R.id.editPetButton);
+        b1.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                displayPetEditor(c);
 
+            }
+        });
     }
 
     protected void displayWarning(Context c){
@@ -179,6 +182,14 @@ public class MainActivity extends AppCompatActivity {
         tv.setText(theWarning);
     }
 
+    protected void displayMain(Context c) {
+        displayName(c);
+        displayStatus(c);
+        displayWarning(c);
+        displayPetUpdateButton(c);
+        displayEditPetButton(c);
+
+    }
     /***
      * FIRST-TIME SETUP FUNCTIONALITY
      */
@@ -468,7 +479,7 @@ public class MainActivity extends AppCompatActivity {
         String careAlertMessage = "Has " + thePet.getName() + " been taken outside to use" +
                 " the bathroom and been fed?";
 
-        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        AlertDialog.Builder builder = new AlertDialog.Builder(c);
 
         builder.setMessage(careAlertMessage);
 
@@ -523,8 +534,195 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     /***
-     *  MAIN ACTIVITY
+     *  PET EDITOR
+     */
+
+    protected void displayPetEditSuccess(Context c){
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(c);
+
+        builder.setTitle("Pet Info Updated");
+
+        builder.setMessage("Your pet's information was successfully updated.");
+
+        builder.setPositiveButton("OK", null);
+
+        builder.setCancelable(false);
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+    protected void displayPetEditCancelled(Context c){
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(c);
+
+        builder.setTitle("Pet Info Not Updated");
+
+        builder.setMessage("Your pet's information was not updated.");
+
+        builder.setPositiveButton("OK", null);
+
+        builder.setCancelable(false);
+        AlertDialog dialog = builder.create();
+        dialog.show();
+    }
+
+
+
+    protected void displayPetEditConfirmation(Context c, String newName, String newContact){
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(c);
+
+        builder.setTitle("Confirm New Pet Info");
+
+        String confirmMessage = "Your pet's information will be updated to the following:\n\n" +
+                "Name: " + newName + "\n" +
+                "Contact Info: " + newContact + "\n\n" +
+                "Are you sure you want to continue?";
+
+        builder.setMessage(confirmMessage);
+
+        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                Pet thePet = loadPet(c);
+                thePet.rename(newName);
+                thePet.changeContact(newContact);
+
+                savePet(thePet, c);
+
+                Log.i("SAVE SUCCESS", "PogU");
+                Log.i("PET OBJ: ", thePet.toString());
+
+                displayMain(c);
+                displayPetEditSuccess(c);
+
+            }
+        });
+
+        builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                displayMain(c);
+                displayPetEditCancelled(c);
+
+            }
+        });
+        builder.setCancelable(false);
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+    }
+
+    protected void displayPetEditor(Context c){
+        AlertDialog.Builder builder = new AlertDialog.Builder(c);
+        builder.setTitle("Pet Editor");
+        builder.setMessage("Feel free to edit your pet's details here.");
+
+        Pet thePet = loadPet(c);
+
+        // basically a modified version of the setup menu
+
+        LinearLayout layout = new LinearLayout(c);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        LinearLayout.LayoutParams params =
+                new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+        params.setMargins(60,0,60,0);
+
+        final EditText petNameInput = new EditText(c);
+        petNameInput.setInputType(InputType.TYPE_CLASS_TEXT);
+        petNameInput.setHint("Your Pet's Name");
+        petNameInput.setText(thePet.getName()); // see now, in this menu we load the existing info
+        layout.addView(petNameInput, params);
+
+        final EditText contactInput = new EditText(c);
+        contactInput.setInputType(InputType.TYPE_CLASS_PHONE);
+        contactInput.setHint("Contact Number to Text");
+        contactInput.setText(thePet.getContact()); // this aint ya mama's setup menu!
+        layout.addView(contactInput, params);
+
+        builder.setView(layout);
+
+        builder.setCancelable(false); //gotta submit! Not allowed to skip this info
+
+        // BUTTON
+
+        builder.setPositiveButton("Submit", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+
+                String newPetName = petNameInput.getText().toString();
+                String newContact = contactInput.getText().toString();
+
+                displayPetEditConfirmation(c, newPetName, newContact);
+
+            }
+        });
+
+        builder.setNegativeButton("Cancel", null);
+
+        AlertDialog dialog = builder.create();
+
+        /***
+         * I could probably just make a textwatcher that is reused buut
+         * I'm not getting paid for this so who cares
+         *
+         * also the onshow listener is gone because the entries will
+         * never be empty on first load
+         */
+
+        contactInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                String newPetName = petNameInput.getText().toString();
+                String newContact = contactInput.getText().toString();
+
+                if(!newPetName.isEmpty() && !newContact.isEmpty()){
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                }
+                else{
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+                }
+            }
+            @Override
+            public void afterTextChanged(Editable editable) {}
+
+        });
+
+        petNameInput.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+
+            @Override
+            public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+                String newPetName = petNameInput.getText().toString();
+                String newContact = contactInput.getText().toString();
+
+                if(!newPetName.isEmpty() && !newContact.isEmpty()){
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);
+                }
+                else{
+                    dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(false);
+                }
+
+            }
+            @Override
+            public void afterTextChanged(Editable editable) {}
+
+        });
+
+        dialog.show();
+    }
+
+
+    /***
+     *  MAIN ACTIVITY STATE FUNCTIONALITY
      */
 
     // move all of the funcitonality below main into main lol
