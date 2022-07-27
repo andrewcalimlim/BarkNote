@@ -1,6 +1,8 @@
 # BarkNote
 Android app that auto-texts my father whenever I fed and took care of the dog
 
-TODO
+# Download
+Download the .apk file located in this repository. BarkNote > app > release > app-release.apk
 
--make a pretty icon and SHIP
+# TO-DO
+Credits activity? Credit me and my dog Quilo
