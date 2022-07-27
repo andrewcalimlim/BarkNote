@@ -160,7 +160,23 @@ public class MainActivity extends AppCompatActivity {
     protected void displayMain(Context c) {
         displayName(c);
         displayStatus(c);
+        displayWarning(c);
         displayButton(c);
+
+    }
+
+    protected void displayWarning(Context c){
+        String theWarning;
+
+        if(smsAllowed(c)){
+            theWarning = "";
+        }
+        else{
+            theWarning = "Warning: BarkNote texts currently disabled";
+        }
+
+        TextView tv = (TextView) findViewById(R.id.smsDisabledWarning);
+        tv.setText(theWarning);
     }
 
     /***
@@ -322,7 +338,7 @@ public class MainActivity extends AppCompatActivity {
             cancelMessage += "No text message was sent. ";
         }
 
-        cancelMessage += " Please take care of " + thePet.getName() +
+        cancelMessage += "Please take care of " + thePet.getName() +
                 " before trying to update again.";
 
         AlertDialog.Builder builder = new AlertDialog.Builder(c);

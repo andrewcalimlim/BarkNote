@@ -5,6 +5,4 @@ TODO
 
 -SETTINGS popup
 
--permissions off should be reflected in-App
-
 -make a pretty icon and SHIP
