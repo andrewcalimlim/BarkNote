@@ -142,6 +142,19 @@ public class MainActivity extends AppCompatActivity {
             b1.setEnabled(true);
         }
 
+        b1.setOnClickListener(new View.OnClickListener() {
+
+            // this is an alert that tells the user to make sure pet has been fed and used the
+            // bathroom
+            @Override
+            public void onClick(View view) {
+                // confirmation dialog
+                displayUpdateConfirmation(view.getContext());
+
+            }
+        });
+
+
     }
 
     protected void displayMain(Context c) {
@@ -432,38 +445,90 @@ public class MainActivity extends AppCompatActivity {
         dialog.show();
     }
 
-    /* MAIN ACTIVITY */
+    protected void displayUpdateConfirmation(Context c){
+        //getting the proper pet name to display in the alert
+        Pet thePet = loadPet(c);
+
+        String careAlertMessage = "Has " + thePet.getName() + " been taken outside to use" +
+                " the bathroom and been fed?";
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+
+        builder.setMessage(careAlertMessage);
+
+        builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+
+                thePet.updateCare();
+                savePet(thePet, MainActivity.this);
+
+                attemptBarkNote(MainActivity.this);
+                displayMain(MainActivity.this);
+                displayUpdateSuccess(MainActivity.this);
+
+            }
+        });
+
+        builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+                displayMain(MainActivity.this);
+                displayUpdateCancelled(MainActivity.this);
+
+            }
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.show();
+
+    }
+
+    // checks sms text permission and if approval given, texts contact
+    protected void attemptBarkNote(Context c){
+
+        Pet thePet = loadPet(c);
+
+        // sending SMS texts if allowed
+        if(smsAllowed(c)){
+            // getting the current time
+            LocalTime rn = LocalTime.now();
+            String pattern = "h:mm a";
+            String theTime = rn.format(DateTimeFormatter.ofPattern(pattern));
+
+            //creating a text
+            String theTextMessage = "Hello! This is an automated BarkNote text " +
+                    "confirming that " + thePet.getName() + " has been taken care" +
+                    " of (walked, used the bathroom, and fed) at " + theTime;
+
+            // sending the text
+            textContact(thePet.getContact(), theTextMessage);
+
+        }
+    }
+
+    /***
+     *  MAIN ACTIVITY
+     */
+
+    // move all of the funcitonality below main into main lol
 
     @Override
     protected void onCreate(Bundle savedInstanceState){
+        super.onCreate(savedInstanceState);
 
-        // Register the permissions callback, which handles the user's response to the
-        // system permissions dialog. Save the return value, an instance of
-        // ActivityResultLauncher, as an instance variable.
+        // Registering the permissions callback (aka how to react to a permissions decision)
+        // this is ugly but the logic is copy and pasted from the Android Studio documentation
+        // so yeah
         ActivityResultLauncher<String> requestPermissionLauncher =
                 registerForActivityResult(new ActivityResultContracts.RequestPermission(),
                         isGranted -> {
                             if (isGranted) {
-                                // Permission is granted. Continue the action or workflow in your
-                                // app.
-
                                 displayRequestAcceptedResponse(MainActivity.this);
-
                             } else {
-                                // Explain to the user that the feature is unavailable because the
-                                // features requires a permission that the user has denied. At the
-                                // same time, respect the user's decision. Don't link to system
-                                // settings in an effort to convince the user to change their
-                                // decision.
-
                                 displayRequestDeniedResponse(MainActivity.this);
-
                             }
                         });
-
-        //launching the main activity
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
 
         setupCheck(requestPermissionLauncher, this);
 
@@ -471,74 +536,27 @@ public class MainActivity extends AppCompatActivity {
         thePet.checkCare();
         savePet(thePet, this);
 
+        //launching the main activity
+        setContentView(R.layout.activity_main);
+
         // loading data from file and displaying on-screen
         displayMain(this);
 
-        //adding button functionality
-        Button careButton = (Button) findViewById(R.id.careAction);
-        careButton.setOnClickListener(new View.OnClickListener() {
+    }
 
-            // this is an alert that tells the user to make sure pet has been fed and used the
-            // bathroom
-            @Override
-            public void onClick(View view) {
 
-                //getting the proper pet name to display in the alert
+    @Override
+    protected void onResume(){
+        super.onResume();
 
-                // what happens if i reload the pet here...
-                Pet thePet = loadPet(view.getContext());
+        Pet thePet = loadPet(this);
+        thePet.checkCare();
+        savePet(thePet, this);
+        displayMain(this);
 
-                String careAlertMessage = "Has " + thePet.getName() + " been taken outside to use" +
-                        " the bathroom and been fed?";
 
-                AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-
-                builder.setMessage(careAlertMessage);
-
-                // functionality for confirming
-                builder.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-
-                        thePet.updateCare();
-                        savePet(thePet, MainActivity.this);
-
-                        // sending SMS texts if allowed
-                        if(smsAllowed(MainActivity.this)){
-                            // getting the current time
-                            LocalTime rn = LocalTime.now();
-                            String pattern = "h:mm a";
-                            String theTime = rn.format(DateTimeFormatter.ofPattern(pattern));
-
-                            //creating a text
-                            String theTextMessage = "Hello! This is an automated BarkNote text " +
-                                    "confirming that " + thePet.getName() + " has been taken care" +
-                                    " of (walked, used the bathroom, and fed) at " + theTime;
-
-                            // sending the text
-                            textContact(thePet.getContact(), theTextMessage);
-
-                        }
-
-                        displayUpdateSuccess(MainActivity.this);
-                        displayMain(MainActivity.this);
-
-                    }
-                });
-
-                builder.setNegativeButton("No", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        displayUpdateCancelled(MainActivity.this);
-
-                    }
-                });
-
-                AlertDialog dialog = builder.create();
-                dialog.show();
-            }
-        });
 
     }
+
 
 }

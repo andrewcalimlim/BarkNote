@@ -1,5 +1,6 @@
 package com.example.barknote;
 import java.time.LocalDate;
+import android.util.Log;
 
 
 public class Pet {
@@ -75,12 +76,18 @@ public class Pet {
     public void checkCare(){ // check if you took care of your pet today
 
         String today = LocalDate.now().toString();
-        if(today == lastCared){
+        //Log.i("TODAY STRING", today);
+        //Log.i("LAST CARED", lastCared);
+
+        if(today.equals(lastCared)){
             caredForToday = true;
+            //Log.i("CARED FOR TODAY", "true");
         }
         else{
             caredForToday = false;
+            //Log.i("CARED FOR TODAY", "false");
         }
+
 
     }
 

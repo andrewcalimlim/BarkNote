@@ -5,6 +5,6 @@ TODO
 
 -SETTINGS popup
 
--onresume should reload main/do setup checks
+-permissions off should be reflected in-App
 
 -make a pretty icon and SHIP
